@@ -111,13 +111,23 @@ class Scriptable {
     };
   }
 
+  environment() {
+    return {
+      ...(process.env || {}),
+      ...(this.serverless?.service?.provider?.environment || {}),
+    };
+  }
+
   runCommand(script) {
     if (this.showCommands) {
       console.log(`Running command: ${script}`);
     }
 
     try {
-      return execSync(script, { stdio: [this.stdin, this.stdout, this.stderr] });
+      return execSync(script, {
+        env: this.environment(),
+        stdio: [this.stdin, this.stdout, this.stderr],
+      });
     } catch (err) {
       throw new SimpleError(`Failed to run command: ${script}`);
     }
@@ -154,6 +164,9 @@ class Scriptable {
       __filename: scriptFile,
       __dirname: path.dirname(fs.realpathSync(scriptFile)),
       exports: Object(),
+      process: {
+        env: this.environment(),
+      },
     };
 
     // See: https://github.com/nodejs/node/blob/7c452845b8d44287f5db96a7f19e7d395e1899ab/lib/internal/modules/cjs/helpers.js#L14
